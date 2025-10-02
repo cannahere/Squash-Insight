@@ -5,30 +5,36 @@ export default function ReportPage({ match }) {
   const stats = useMemo(() => {
     const rallies = match?.rallies || [];
     const total = rallies.length;
-    const wins = rallies.filter(r => r.result === 'Win').length;
-    const losses = total - wins;
+    const wins = match?.tallies?.result?.Win || 0;
+    const losses = match?.tallies?.result?.Lose || 0;
+
     const buckets = { '0–3':0, '4–7':0, '8+':0 };
     rallies.forEach(r => {
       if (r.durationSec <= 3) buckets['0–3']++;
       else if (r.durationSec <= 7) buckets['4–7']++;
       else buckets['8+']++;
     });
-    const unforced = rallies.filter(r => r.reason === 'Unforced').length;
-    const consistency = total ? Math.round((unforced/total)*100) : 0;
-    const poorServePct = total ? Math.round((rallies.filter(r => r.serveQuality==='Poor').length/total)*100) : 0;
-    const poorReturnPct = total ? Math.round((rallies.filter(r => r.returnQuality==='Poor').length/total)*100) : 0;
+
+    const unforced = match?.tallies?.reason?.Unforced || 0;
+    const consistency = (wins+losses) ? Math.round((unforced/(wins+losses))*100) : 0;
+
+    const poorServePct = (wins+losses) ? Math.round(((match?.tallies?.serve?.Poor || 0)/(wins+losses))*100) : 0;
+    const poorReturnPct = (wins+losses) ? Math.round(((match?.tallies?.ret?.Poor || 0)/(wins+losses))*100) : 0;
+
     const chosen = 'Drive';
-    const shotAttempts = rallies.filter(r => r.shotType === chosen).length;
-    const shotWins = rallies.filter(r => r.shotType === chosen && r.result==='Win').length;
-    const shotAccuracy = shotAttempts ? Math.round((shotWins/shotAttempts)*100) : 0;
+    const shotAttempts = match?.tallies?.shots?.[chosen] || 0;
+    // heuristic: assume 55%+ is target (proxy success rate uses wins ratio overall for now)
+    const overallSuccess = (wins+losses) ? Math.round((wins/(wins+losses))*100) : 0;
+    const shotAccuracy = shotAttempts ? overallSuccess : 0;
+
     return { total, wins, losses, buckets, consistency, poorServePct, poorReturnPct, chosen, shotAccuracy, rallies };
   }, [match]);
 
   const recommendations = useMemo(() => {
     const recs = [];
     if (stats.consistency > 25) recs.push(['Cut unforced errors','Your unforced-error rate is above benchmark. Add 10-min accuracy drill (straight drives to deep targets).']);
-    const shortLosses = stats.rallies.filter(r => r.durationSec <= 3 && r.result==='Lose').length;
-    if (shortLosses >= Math.ceil((stats.total||0)*0.3)) recs.push(['First-two-shots focus','You are dropping early points. Practice deep returns and serve consistency.']);
+    const shortLosses = stats.rallies.filter(r => r.durationSec <= 3).length - stats.buckets['0–3']; // rough proxy
+    if ((stats.buckets['0–3'] || 0) >= Math.ceil((stats.total||0)*0.3)) recs.push(['First-two-shots focus','You are dropping early points. Practice deep returns and serve consistency.']);
     if (stats.poorServePct > 30 || stats.poorReturnPct > 30) recs.push(['Upgrade serve & return','>30% rated Poor. Do 3x10 serves to targets; returns: volley to length & cross-court depth.']);
     if (stats.shotAccuracy && stats.shotAccuracy < 55) recs.push([`${stats.chosen} accuracy below target`, 'Reps to back corners; aim behind service box with 80% pace.']);
     return recs.slice(0,3);
@@ -76,7 +82,7 @@ export default function ReportPage({ match }) {
         <div className="section-title">Shot Accuracy: {stats.chosen}</div>
         <div style={{display:'flex', alignItems:'center', gap:16}}>
           <KPI label="Accuracy %" value={stats.shotAccuracy} />
-          <div className="hint">Based on outcomes when the selected shot type was present.</div>
+          <div className="small">Proxy for MVP. Per-shot outcomes come next.</div>
         </div>
       </div>
 
@@ -85,9 +91,9 @@ export default function ReportPage({ match }) {
         {recommendations.length ? recommendations.map(([title,detail],i)=>(
           <div key={i} className="card" style={{padding:'10px', marginBottom:'8px', borderColor:'#bff3ef', background:'#eefcfb'}}>
             <strong>{title}</strong>
-            <div className="hint">{detail}</div>
+            <div className="small">{detail}</div>
           </div>
-        )) : <div className="hint">Tag a few more rallies to unlock tailored tips.</div>}
+        )) : <div className="small">Tag a few more rallies to unlock tailored tips.</div>}
       </div>
     </div>
   );

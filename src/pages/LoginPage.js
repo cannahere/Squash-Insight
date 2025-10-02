@@ -10,7 +10,7 @@ export default function LoginPage({ onLogin }) {
         <input className="input" placeholder="you@example.com" value={email} onChange={e=>setEmail(e.target.value)} />
         <button className="btn primary" onClick={()=>onLogin({email})}>Continue</button>
       </div>
-      <div className="hint" style={{marginTop:8}}>Privacy: this demo stores data locally in memory.</div>
+      <div className="small" style={{marginTop:8}}>Privacy: this demo stores data locally in memory.</div>
     </div>
   );
 }

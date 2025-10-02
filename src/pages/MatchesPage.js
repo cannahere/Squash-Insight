@@ -15,8 +15,8 @@ export default function MatchesPage({ matches, onAdd, onOpen }) {
               <strong>{m.title}</strong>
               <span className="badge">{m.format}</span>
             </div>
-            <div className="hint">{m.date} • vs {m.opponent}</div>
-            <div className="hint">Rallies tagged: {m.rallies?.length || 0}</div>
+            <div className="small">{m.date} • vs {m.opponent}</div>
+            <div className="small">Rallies tagged: {m.rallies?.length || 0}</div>
           </div>
         ))}
       </div>

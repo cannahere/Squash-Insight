@@ -9,7 +9,7 @@ import LoginPage from './pages/LoginPage';
 export default function App() {
   const [user, setUser] = useState(null);
   const [matches, setMatches] = useState([
-    { id: 'm1', title: "Practice Match 1", date: new Date().toISOString().slice(0,10), opponent: 'TBD', format: 'Bo5', videoUrl: '', notes: '', rallies: [] }
+    { id: 'm1', title: 'Practice Match 1', date: new Date().toISOString().slice(0,10), opponent: 'TBD', format: 'Bo5', videoUrl: '', notes: '', rallies: [], tallies: initTallies() }
   ]);
   const [selectedMatchId, setSelectedMatchId] = useState('m1');
 
@@ -18,7 +18,7 @@ export default function App() {
 
   const addMatch = () => {
     const id = `m${matches.length + 1}`;
-    const m = { id, title: `Practice Match ${matches.length + 1}`, date: new Date().toISOString().slice(0,10), opponent: 'TBD', format: 'Bo5', videoUrl: '', notes: '', rallies: [] };
+    const m = { id, title: `Practice Match ${matches.length + 1}`, date: new Date().toISOString().slice(0,10), opponent: 'TBD', format: 'Bo5', videoUrl: '', notes: '', rallies: [], tallies: initTallies() };
     setMatches([m, ...matches]);
     setSelectedMatchId(id);
     navigate('/match/' + id);
@@ -52,7 +52,18 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
 
-      <div className="footer">MVP Prototype • Paste URL or Upload MP4</div>
+      <div className="footer">MVP Prototype • Live Tally Tagging • Space=Play/Pause, Enter=End Rally</div>
     </div>
   );
+}
+
+function initTallies(){
+  return {
+    result: { Win:0, Lose:0 },
+    reason: { Winner:0, Forced:0, Unforced:0 },
+    serve: { Good:0, Neutral:0, Poor:0 },
+    ret: { Good:0, Neutral:0, Poor:0 },
+    shots: { Drive:0, Drop:0, Lob:0, Boast:0, Serve:0, Return:0 },
+    zones: { 'Front-Left':0, 'Front-Right':0, 'Middle':0, 'Back-Left':0, 'Back-Right':0 }
+  };
 }
