@@ -22,3 +22,4 @@ a{color:var(--accent);text-decoration:none}.container{max-width:1180px;margin:0 
 .counterbtn{display:inline-flex;align-items:center;gap:8px}
 .counterbtn .count{font-weight:700}
 kbd{background:#eee;border:1px solid #ccc;border-bottom-width:2px;border-radius:6px;padding:2px 6px;font-size:12px}
+.warn{background:#fff7ed;border:1px solid #fed7aa;color:#92400e;padding:8px;border-radius:10px}

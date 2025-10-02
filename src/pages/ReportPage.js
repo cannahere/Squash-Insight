@@ -16,15 +16,14 @@ export default function ReportPage({ match }) {
     });
 
     const unforced = match?.tallies?.reason?.Unforced || 0;
-    const consistency = (wins+losses) ? Math.round((unforced/(wins+losses))*100) : 0;
-
-    const poorServePct = (wins+losses) ? Math.round(((match?.tallies?.serve?.Poor || 0)/(wins+losses))*100) : 0;
-    const poorReturnPct = (wins+losses) ? Math.round(((match?.tallies?.ret?.Poor || 0)/(wins+losses))*100) : 0;
+    const taggedTotal = wins + losses || 1;
+    const consistency = Math.round((unforced/taggedTotal)*100);
+    const poorServePct = Math.round(((match?.tallies?.serve?.Poor || 0)/taggedTotal)*100);
+    const poorReturnPct = Math.round(((match?.tallies?.ret?.Poor || 0)/taggedTotal)*100);
 
     const chosen = 'Drive';
     const shotAttempts = match?.tallies?.shots?.[chosen] || 0;
-    // heuristic: assume 55%+ is target (proxy success rate uses wins ratio overall for now)
-    const overallSuccess = (wins+losses) ? Math.round((wins/(wins+losses))*100) : 0;
+    const overallSuccess = taggedTotal ? Math.round((wins/taggedTotal)*100) : 0;
     const shotAccuracy = shotAttempts ? overallSuccess : 0;
 
     return { total, wins, losses, buckets, consistency, poorServePct, poorReturnPct, chosen, shotAccuracy, rallies };
@@ -33,7 +32,6 @@ export default function ReportPage({ match }) {
   const recommendations = useMemo(() => {
     const recs = [];
     if (stats.consistency > 25) recs.push(['Cut unforced errors','Your unforced-error rate is above benchmark. Add 10-min accuracy drill (straight drives to deep targets).']);
-    const shortLosses = stats.rallies.filter(r => r.durationSec <= 3).length - stats.buckets['0–3']; // rough proxy
     if ((stats.buckets['0–3'] || 0) >= Math.ceil((stats.total||0)*0.3)) recs.push(['First-two-shots focus','You are dropping early points. Practice deep returns and serve consistency.']);
     if (stats.poorServePct > 30 || stats.poorReturnPct > 30) recs.push(['Upgrade serve & return','>30% rated Poor. Do 3x10 serves to targets; returns: volley to length & cross-court depth.']);
     if (stats.shotAccuracy && stats.shotAccuracy < 55) recs.push([`${stats.chosen} accuracy below target`, 'Reps to back corners; aim behind service box with 80% pace.']);

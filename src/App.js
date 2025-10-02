@@ -52,7 +52,7 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
 
-      <div className="footer">MVP Prototype • Live Tally Tagging • Space=Play/Pause, Enter=End Rally</div>
+      <div className="footer">MVP • Start/Stop Analyze (auto-split rallies) • Space=Play/Pause, Enter=Manual Split</div>
     </div>
   );
 }
