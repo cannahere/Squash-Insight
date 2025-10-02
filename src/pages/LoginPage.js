@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('');
-
   return (
     <div className="card">
       <h2>Welcome</h2>

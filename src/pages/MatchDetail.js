@@ -1,7 +1,23 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 
 const courtZones = ['Front-Left','Front-Right','Back-Left','Back-Right','Middle'];
 const shotTypes = ['Drive','Boast','Drop','Lob','Serve','Return'];
+
+function toYouTubeEmbed(url) {
+  if (!url) return '';
+  try {
+    const u = new URL(url);
+    if (u.hostname.includes('youtu.be')) {
+      return `https://www.youtube.com/embed/${u.pathname.slice(1)}`;
+    }
+    if (u.hostname.includes('youtube.com')) {
+      const id = u.searchParams.get('v');
+      if (id) return `https://www.youtube.com/embed/${id}`;
+      if (u.pathname.startsWith('/embed/')) return url;
+    }
+  } catch {}
+  return '';
+}
 
 export default function MatchDetail({ match, onUpdate, onReport }) {
   const [isRallyActive, setIsRallyActive] = useState(false);
@@ -15,6 +31,8 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
     shotType: 'Drive',
     targetZone: 'Back-Right'
   });
+
+  const [localVideoUrl, setLocalVideoUrl] = useState(match?.videoUrl || '');
 
   const startRally = () => {
     if (isRallyActive) return;
@@ -41,6 +59,22 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
     onUpdate(m => ({ ...m, rallies: m.rallies.slice(0, m.rallies.length - 1) }));
   };
 
+  const saveVideoUrl = () => {
+    onUpdate(m => ({ ...m, videoUrl: localVideoUrl }));
+  };
+
+  const onUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const blobUrl = URL.createObjectURL(file);
+    setLocalVideoUrl(blobUrl);
+    onUpdate(m => ({ ...m, videoUrl: blobUrl }));
+  };
+
+  const embed = toYouTubeEmbed(localVideoUrl);
+  const isYouTube = Boolean(embed);
+  const playableUrl = isYouTube ? embed : localVideoUrl;
+
   if (!match) return <div className="card">No match selected.</div>;
 
   return (
@@ -48,7 +82,15 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
       <div className="card">
         <h3>{match.title}</h3>
         <div className="video">
-          <iframe title="Match Video" width="100%" height="100%" src={match.videoUrl} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+          {playableUrl ? (
+            isYouTube ? (
+              <iframe title="Match Video" width="100%" height="100%" src={playableUrl} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+            ) : (
+              <video src={playableUrl} controls style={{width:'100%', height:'100%'}} />
+            )
+          ) : (
+            <div className="hint">Paste a YouTube link or upload an MP4 using the panel on the right.</div>
+          )}
         </div>
       </div>
 
@@ -98,6 +140,16 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
               {courtZones.map(z=> <option key={z}>{z}</option>)}
             </select>
           </div>
+        </div>
+
+        <div className="section-title" style={{marginTop:16}}>Video Source</div>
+        <div className="grid" style={{gap:8}}>
+          <input className="input" placeholder="Paste YouTube link or direct MP4 URL" value={localVideoUrl} onChange={e=>setLocalVideoUrl(e.target.value)} />
+          <div className="toolbar">
+            <button className="btn" onClick={saveVideoUrl}>Save URL</button>
+            <input type="file" accept="video/mp4,video/webm,video/quicktime" onChange={onUpload} />
+          </div>
+          <div className="hint">• Paste any YouTube link (we auto-convert to embed) • Or upload an MP4/WebM/Mov (stored only in your browser for this demo)</div>
         </div>
 
         <div className="hint" style={{marginTop:10}}>Tip: Start Rally, wait a few seconds, End Rally, then set outcome details. Tag ~8 rallies to see trends.</div>

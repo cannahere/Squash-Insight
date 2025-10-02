@@ -6,12 +6,10 @@ import ReportPage from './pages/ReportPage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
 
-const demoVideo = 'https://www.youtube.com/embed/tg2X6wBfSxQ';
-
 export default function App() {
   const [user, setUser] = useState(null);
   const [matches, setMatches] = useState([
-    { id: 'm1', title: "Delbarton vs St. Peter's", date: '2025-09-14', opponent: "St. Peter's", format: 'Bo5', videoUrl: demoVideo, notes: 'Varsity match', rallies: [] }
+    { id: 'm1', title: "Practice Match 1", date: new Date().toISOString().slice(0,10), opponent: 'TBD', format: 'Bo5', videoUrl: '', notes: '', rallies: [] }
   ]);
   const [selectedMatchId, setSelectedMatchId] = useState('m1');
 
@@ -20,7 +18,7 @@ export default function App() {
 
   const addMatch = () => {
     const id = `m${matches.length + 1}`;
-    const m = { id, title: `Practice Match ${matches.length + 1}`, date: new Date().toISOString().slice(0,10), opponent: 'TBD', format: 'Bo5', videoUrl: demoVideo, notes: '', rallies: [] };
+    const m = { id, title: `Practice Match ${matches.length + 1}`, date: new Date().toISOString().slice(0,10), opponent: 'TBD', format: 'Bo5', videoUrl: '', notes: '', rallies: [] };
     setMatches([m, ...matches]);
     setSelectedMatchId(id);
     navigate('/match/' + id);
@@ -54,7 +52,7 @@ export default function App() {
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
 
-      <div className="footer">MVP Prototype • © Squash Insight</div>
+      <div className="footer">MVP Prototype • Paste URL or Upload MP4</div>
     </div>
   );
 }

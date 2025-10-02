@@ -8,5 +8,5 @@ a{color:var(--accent);text-decoration:none}.container{max-width:1100px;margin:0 
 .btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}.input{width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:12px}
 .badge{padding:4px 8px;background:#eefcfb;border:1px solid #c7f2f0;border-radius:999px;color:#066e6b;font-size:12px}.kpi{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px}
 .kpi .label{font-size:12px;color:var(--muted)}.kpi .value{font-weight:700;font-size:22px}.section-title{font-weight:700;margin-bottom:8px}.toolbar{display:flex;gap:8px;flex-wrap:wrap}
-.select,select{padding:8px 10px;border:1px solid var(--border);border-radius:10px}.hint{color:var(--muted);font-size:12px}.video{aspect-ratio:16/9;width:100%;background:#000;border-radius:14px;overflow:hidden}
+.select,select{padding:8px 10px;border:1px solid var(--border);border-radius:10px}.hint{color:var(--muted);font-size:12px}.video{aspect-ratio:16/9;width:100%;background:#000;border-radius:14px;overflow:hidden;display:flex;align-items:center;justify-content:center}
 .footer{text-align:center;font-size:12px;color:var(--muted);margin-top:24px}
