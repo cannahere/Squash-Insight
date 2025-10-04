@@ -1,3 +1,13 @@
+Got it — here’s a single, complete drop-in file for src/pages/MatchDetail.js that includes:
+	•	Fully auto-tracking (no popups for tagging)
+	•	You-only stats (Reason/Shot/Zone only when you win; Serve/Return based on server)
+	•	Player names (editable)
+	•	Server tracking (winner serves next)
+	•	Choose tracked player (Left/Right) modal that pauses the video, blocks analyze until chosen, and supports L/R keys
+	•	Optional live log toggle
+
+Replace the entire contents of src/pages/MatchDetail.js with the code below.
+
 import React, { useEffect, useRef, useState } from 'react';
 
 const ZONES = ['Front-Left','Front-Right','Middle','Back-Left','Back-Right'];
@@ -76,23 +86,34 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
   const motionSumRef = useRef(0);
   const framesRef = useRef(0);
 
-  // Player names & server (persisted in match)
+  // Player names & server (persisted on match)
   const playerYou = match?.playerYou ?? 'Daniel';
   const playerOpp = match?.playerOpp ?? 'Opponent';
   const server = match?.server ?? 'you'; // who serves the NEXT rally by default
 
+  // Tracked player side (left/right) chooser modal
+  const [trackModalOpen, setTrackModalOpen] = useState(false);
+
   // Live log (optional)
   const [log, setLog] = useState([]);
 
+  /** ---------- keyboard handling (Space, Enter, L/R in modal) ---------- **/
   useEffect(() => {
     const onKey = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+      if (trackModalOpen) {
+        const k = e.key.toLowerCase();
+        if (k === 'l') { chooseTrackedPlayer('left'); e.preventDefault(); return; }
+        if (k === 'r') { chooseTrackedPlayer('right'); e.preventDefault(); return; }
+      }
+
       if (e.code === 'Space') { e.preventDefault(); const v = videoRef.current; if (!v) return; (v.paused ? v.play() : v.pause()); }
       if (e.code === 'Enter') { e.preventDefault(); manualSplit(); }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [trackModalOpen]);
 
   useEffect(() => {
     if (videoRef.current) setRallyStart(videoRef.current.currentTime || 0);
@@ -103,6 +124,18 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
   const embed = toYouTubeEmbed(url);
   const isYouTube = Boolean(embed);
   const playableUrl = isYouTube ? embed : url;
+
+  /** --------------- tracked player modal helpers --------------- **/
+  function openTrackedPlayerModal() {
+    const v = videoRef.current;
+    if (v && !v.paused) v.pause();
+    setTrackModalOpen(true);
+  }
+  function chooseTrackedPlayer(side /* 'left' | 'right' */) {
+    onUpdate(m => ({ ...m, trackedPlayerSide: side }));
+    setTrackModalOpen(false);
+    setTimeout(() => videoRef.current?.play(), 0);
+  }
 
   /** --------------- Top: Player config --------------- **/
   function savePlayers(yourName, oppName) {
@@ -129,18 +162,18 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
 
     const tags = autoTagFromFeatures({ dur: durationSec, ...feats }, serverAtStart);
 
-    // Batch update: add rally, increment tallies, set next server (winner serves next)
+    // YOU-ONLY: update tallies and set next server
     onUpdate((m) => {
       const t = { ...m.tallies };
 
-      // Result
-      if (tags.result === 'Win') t.result = { ...t.result, Win: (t.result.Win || 0) + 1 };
-      else                      t.result = { ...t.result, Lose: (t.result.Lose || 0) + 1 };
+      // 1) Result (always your perspective)
+      if (tags.result === 'Win') {
+        t.result = { ...t.result, Win: (t.result.Win || 0) + 1 };
+      } else {
+        t.result = { ...t.result, Lose: (t.result.Lose || 0) + 1 };
+      }
 
-      // Reason
-      t.reason = { ...t.reason, [tags.reason]: (t.reason[tags.reason] || 0) + 1 };
-
-      // Serve/Return quality (only one counts per rally depending on server)
+      // 2) Serve / Return quality: ONLY one per rally, depending on server
       if (serverAtStart === 'you' && tags.serveQ) {
         t.serve = { ...t.serve, [tags.serveQ]: (t.serve[tags.serveQ] || 0) + 1 };
       }
@@ -148,11 +181,12 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
         t.ret = { ...t.ret, [tags.returnQ]: (t.ret[tags.returnQ] || 0) + 1 };
       }
 
-      // Shot
-      t.shots = { ...t.shots, [tags.shot]: (t.shots[tags.shot] || 0) + 1 };
-
-      // Zone
-      t.zones = { ...t.zones, [tags.zone]: (t.zones[tags.zone] || 0) + 1 };
+      // 3) YOU-only stats (Reason / Shot / Zone): ONLY when YOU WIN
+      if (tags.result === 'Win') {
+        t.reason = { ...t.reason, [tags.reason]: (t.reason[tags.reason] || 0) + 1 };
+        t.shots  = { ...t.shots,  [tags.shot]:  (t.shots[tags.shot]   || 0) + 1 };
+        t.zones  = { ...t.zones,  [tags.zone]:  (t.zones[tags.zone]   || 0) + 1 };
+      }
 
       const rally = {
         id: `r${(m?.rallies?.length || 0) + 1}`,
@@ -164,7 +198,7 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
         autoTags: tags
       };
 
-      const nextServer = tags.result === 'Win' ? 'you' : 'opp'; // winner serves next (your perspective)
+      const nextServer = tags.result === 'Win' ? 'you' : 'opp'; // winner serves next
 
       return {
         ...m,
@@ -174,7 +208,7 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
       };
     });
 
-    // Log line (optional)
+    // Optional live log
     setLog((prev) => {
       const line = `Rally ${(match?.rallies?.length || 0) + 1}: ${tags.result} • ${tags.reason} • ${serverAtStart === 'you' ? 'Serve ' : 'Return '}${serverAtStart === 'you' ? tags.serveQ : tags.returnQ} • ${tags.shot} • ${tags.zone}`;
       const arr = [line, ...prev];
@@ -185,6 +219,9 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
   }
 
   function manualSplit() {
+    // Require tracked player side first
+    if (!match?.trackedPlayerSide) { openTrackedPlayerModal(); return; }
+
     const v = videoRef.current; if (!v) return;
     const now = v.currentTime;
     const feats = {
@@ -198,6 +235,9 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
 
   /** --------------- Analyzer loop --------------- **/
   function startAnalyze() {
+    // require tracked player side first
+    if (!match?.trackedPlayerSide) { openTrackedPlayerModal(); return; }
+
     if (isYouTube) { setHud((h) => ({ ...h, msg: 'Auto needs an uploaded MP4 or CORS-enabled MP4. YouTube blocks analysis.' })); return; }
     const v = videoRef.current; if (!v) return;
     setAnalyzing(true);
@@ -342,6 +382,14 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
             <div className={`btn ${server==='you'?'green':'gray'}`} onClick={()=>setServer('you')}>{playerYou}</div>
             <div className={`btn ${server==='opp'?'red':'gray'}`} onClick={()=>setServer('opp')}>{playerOpp}</div>
           </div>
+          <button className="btn" style={{marginLeft:8}} onClick={openTrackedPlayerModal}>
+            Choose tracked player (Left/Right)
+          </button>
+          {match?.trackedPlayerSide && (
+            <span className="small" style={{marginLeft:8}}>
+              Tracking: <strong>{match.trackedPlayerSide.toUpperCase()}</strong> side
+            </span>
+          )}
         </div>
 
         <h3>{match.title}</h3>
@@ -473,6 +521,40 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
           <button className="btn primary" onClick={onReport}>Open Report</button>
         </div>
       </div>
+
+      {/* Modal: choose tracked player side */}
+      {trackModalOpen && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100
+          }}
+          onClick={()=>setTrackModalOpen(false)}
+        >
+          <div className="card" style={{ width: 520 }} onClick={e => e.stopPropagation()}>
+            <div className="section-title">Which player do you want to track?</div>
+            <p className="small" style={{ marginTop: 4 }}>
+              Choose based on the current <strong>screen positions</strong>. The video is paused while you choose.
+              Tip: press <kbd>L</kbd> for Left or <kbd>R</kbd> for Right.
+            </p>
+            <div className="row" style={{ marginTop: 12 }}>
+              <button className="btn green" style={{ flex: 1 }} onClick={() => chooseTrackedPlayer('left')}>
+                Track LEFT player
+              </button>
+              <button className="btn red" style={{ flex: 1 }} onClick={() => chooseTrackedPlayer('right')}>
+                Track RIGHT player
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
+What changed:
+	•	A single file contains everything (auto tagging, you-only counters, tracked-player modal, guards, keyboard shortcuts).
+	•	Analyze/Manual Split won’t run until the user picks Left/Right (video pauses during selection).
+	•	Right panel updates live, no pop-ups.
+
+If you want me to wire the tracked side into future heuristics (e.g., estimating zones by which half of the frame the action starts on), say the word and I’ll extend this.
