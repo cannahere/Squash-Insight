@@ -1,13 +1,3 @@
-Got it — here’s a single, complete drop-in file for src/pages/MatchDetail.js that includes:
-	•	Fully auto-tracking (no popups for tagging)
-	•	You-only stats (Reason/Shot/Zone only when you win; Serve/Return based on server)
-	•	Player names (editable)
-	•	Server tracking (winner serves next)
-	•	Choose tracked player (Left/Right) modal that pauses the video, blocks analyze until chosen, and supports L/R keys
-	•	Optional live log toggle
-
-Replace the entire contents of src/pages/MatchDetail.js with the code below.
-
 import React, { useEffect, useRef, useState } from 'react';
 
 const ZONES = ['Front-Left','Front-Right','Middle','Back-Left','Back-Right'];
@@ -551,10 +541,3 @@ export default function MatchDetail({ match, onUpdate, onReport }) {
     </div>
   );
 }
-
-What changed:
-	•	A single file contains everything (auto tagging, you-only counters, tracked-player modal, guards, keyboard shortcuts).
-	•	Analyze/Manual Split won’t run until the user picks Left/Right (video pauses during selection).
-	•	Right panel updates live, no pop-ups.
-
-If you want me to wire the tracked side into future heuristics (e.g., estimating zones by which half of the frame the action starts on), say the word and I’ll extend this.
